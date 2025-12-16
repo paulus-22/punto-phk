@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Punto strategy game with AI (Minimax, Paranoid, Tournament Mode)">
+    <meta name="description" content="Punto strategy game with AI (Minimax, Paranoid)">
     <meta property="og:title" content="Punto AI Game">
-    <meta property="og:description" content="Watch AI vs AI tournaments with heuristic and minimax strategies">
     <title>Punto Game</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -70,19 +69,6 @@
                 </div>
 
                 <div id="aiConfig" style="display:flex; flex-direction:column; gap:10px"></div>
-
-                <div class="info-box" style="font-size:0.45em">
-                  Tournament Mode
-                  <select id="tournamentModeSelect" style="margin-left:10px">
-                    <option value="off" selected>Off</option>
-                    <option value="on">On</option>
-                  </select>
-                </div>
-
-                <div class="info-box" style="font-size:0.45em">
-                  Total Games
-                  <input id="tournamentGames" type="number" value="50" min="1" max="500" style="width:80px; margin-left:10px">
-                </div>
 
                 <button id="startBtn" onclick="startConfiguredGame()" style="padding:15px 25px;font-size:0.7em;font-family:'Press Start 2P', cursive;background:#e74c3c;color:white;border:4px solid #c0392b;cursor:pointer;box-shadow:inset 0 -4px 0 #c0392b;transition:all 0.1s">Mulai Game</button>
             </div>

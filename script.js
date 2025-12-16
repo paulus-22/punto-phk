@@ -22,16 +22,6 @@ const matchStats = {
   aiTurns: {}, // key: aiType+level
 }
 
-let tournamentConfig = {
-  enabled: false,
-  totalGames: 0,
-  currentGame: 0,
-  results: {}
-}
-
-let tournamentMode = false
-let tournamentResults = []
-
 function togglePause() {
   isPaused = !isPaused
   document.getElementById('pauseBtn').textContent = isPaused ? '▶ Resume' : '⏸ Pause'
@@ -52,6 +42,8 @@ let game = {
     winLength: 4,
     ui: { numPlayers: 4, mode: 'human' }
 };
+
+const moveHistory = []
 function buildSetupUI() {
     const numSel = document.getElementById('numPlayersSelect')
     const modeSel = document.getElementById('modeSelect')
@@ -142,12 +134,6 @@ function startConfiguredGame() {
     const numPlayers = clampInt(numSel?.value ?? 4, 2, 4)
     const mode = modeSel?.value === 'aivai' ? 'aivai' : 'human'
 
-    // Tournament config
-    const tourSel = document.getElementById('tournamentModeSelect')
-    const tourGames = document.getElementById('tournamentGames')
-    tournamentConfig.enabled = tourSel?.value === 'on'
-    tournamentConfig.totalGames = clampInt(tourGames?.value ?? 50, 1, 500)
-
     // Gather per-player AI config
     const aiConfig = []
     for (let i = 0; i < numPlayers; i++) {
@@ -166,11 +152,11 @@ function startConfiguredGame() {
 
 // Build setup UI once DOM is ready
 window.addEventListener('load', () => {
-    const numSel = document.getElementById('numPlayersSelect')
-    const modeSel = document.getElementById('modeSelect')
-    if (numSel) numSel.addEventListener('change', buildSetupUI)
-    if (modeSel) modeSel.addEventListener('change', buildSetupUI)
-    buildSetupUI()
+  const numSel = document.getElementById('numPlayersSelect')
+  const modeSel = document.getElementById('modeSelect')
+  if (numSel) numSel.addEventListener('change', buildSetupUI)
+  if (modeSel) modeSel.addEventListener('change', buildSetupUI)
+  buildSetupUI()
 })
 
 function createDeck(color) {
@@ -592,10 +578,25 @@ function placeCard(row, col) {
 }
 
 async function executeMove(row, col) {
+    const current = game.players[game.currentPlayer]
     matchStats.moves++
     const player = game.players[game.currentPlayer];
     const playerIndex = game.currentPlayer;
-    
+
+    // Log move before changing state
+    moveHistory.push({
+      turn: matchStats.moves,
+      playerIndex: game.currentPlayer,
+      playerName: current.name,
+      color: current.color,
+      isAI: current.isAI,
+      aiType: current.aiType,
+      aiLevel: current.aiLevel,
+      card: game.board[row][col]?.value,
+      position: { row, col },
+      reason: current.isAI ? (current.lastAIReason || 'UNKNOWN') : 'HUMAN'
+    })
+
     game.board[row][col] = {...game.selectedCard};
     game.firstMovePlaced = true;
 
@@ -603,7 +604,7 @@ async function executeMove(row, col) {
     player.hand.splice(cardIdx, 1);
 
     const needNewCard = player.deck.length > 0;
-    
+
     game.selectedCard = null;
 
     const winner = checkWinner();
@@ -728,18 +729,6 @@ function countSequences(color) {
 function endGame(winner, isDraw = false) {
     game.gameEnded = true;
 
-    // Tournament logic
-    if (tournamentConfig.enabled) {
-      const key = `${winner.aiType || 'human'}:${winner.aiLevel || 0}`
-      tournamentConfig.results[key] = (tournamentConfig.results[key] || 0) + 1
-      tournamentConfig.currentGame++
-
-      if (tournamentConfig.currentGame < tournamentConfig.totalGames) {
-        setTimeout(() => location.reload(), 300)
-        return
-      }
-    }
-
     document.getElementById('gameScreen').style.display = 'none';
     document.getElementById('winnerScreen').style.display = 'block';
 
@@ -751,18 +740,10 @@ function endGame(winner, isDraw = false) {
       const avg = Math.round(v.totalTime / v.count)
       summary.push(`<b>${key}</b> → Avg Think: ${avg} ms (${v.count} turns)`)
     })
-
-    if (tournamentConfig.enabled) {
-      summary.push('<hr><b>Tournament Results</b>')
-      Object.entries(tournamentConfig.results).forEach(([k,v]) => {
-        summary.push(`${k} → ${v} wins`)
-      })
-    }
-
     document.getElementById('matchSummary').innerHTML = summary.join('<br>')
 
     let infoText = `<div style="color: var(--color-${winner.color}); font-size: 2em; margin: 20px 0;">${winner.name} Menang!</div>`;
-    
+
     if (isDraw) {
         const score = countSequences(winner.color);
         infoText += `<p>Game berakhir draw!</p>`;
@@ -785,16 +766,33 @@ function aiTurnForCurrentPlayer() {
 }
 // Export match as JSON
 function exportMatchJSON() {
+  const winnerIndex = game.players.findIndex(p => {
+    const winnerInfo = document.getElementById('winnerInfo')?.textContent || ''
+    return winnerInfo.includes(p.name)
+  })
+
   const data = {
     timestamp: new Date().toISOString(),
-    players: game.players.map(p => ({
+    config: {
+      winLength: game.winLength,
+      players: game.players.length,
+      mode: game.ui.mode
+    },
+    players: game.players.map((p, i) => ({
+      index: i,
       name: p.name,
       color: p.color,
+      isAI: p.isAI,
       aiType: p.aiType,
       aiLevel: p.aiLevel
     })),
+    winner: {
+      index: winnerIndex,
+      name: game.players[winnerIndex]?.name,
+      color: game.players[winnerIndex]?.color
+    },
     stats: matchStats,
-    winner: game.gameEnded ? game.players.find(p => p.color === document.querySelector('.winner-info div')?.style?.color) : null
+    moves: moveHistory
   }
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -804,16 +802,4 @@ function exportMatchJSON() {
   a.download = `punto_match_${Date.now()}.json`
   a.click()
   URL.revokeObjectURL(url)
-}
-
-// Tournament runner
-async function runTournament(n = 50) {
-  tournamentMode = true
-  tournamentResults = []
-
-  for (let i = 0; i < n; i++) {
-    await new Promise(res => setTimeout(res, 300))
-    location.reload()
-    return
-  }
 }

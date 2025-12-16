@@ -67,10 +67,14 @@ window.runAITurn = async function runAITurn() {
     }, 300)
 }
 
-function showAIReason(text) {
+function showAIReason(text, tag = 'SEARCH') {
   const overlay = document.getElementById('aiReasonOverlay')
   if (!overlay) return
-  overlay.textContent = text
+
+  const player = game.players[game.currentPlayer]
+  if (player) player.lastAIReason = tag
+
+  overlay.textContent = `[${tag}] ${text}`
   overlay.style.display = 'block'
   setTimeout(() => overlay.style.display = 'none', 1800)
 }
@@ -93,6 +97,7 @@ function findBestMoveSmart(player, startTime, level) {
     console.log('Phase 1: Checking immediate win...');
     const winMove = findImmediateWin(player);
     if (winMove) {
+        showAIReason('Menang langsung!', 'WIN')
         console.log('✓ IMMEDIATE WIN FOUND!');
         return winMove;
     }
@@ -100,6 +105,7 @@ function findBestMoveSmart(player, startTime, level) {
     console.log('Phase 2: Checking critical threats...');
     const criticalDefense = findCriticalThreats(player);
     if (criticalDefense) {
+        showAIReason('Blokir lawan kritis!', 'BLOCK')
         console.log('✓ BLOCKING CRITICAL THREAT!');
         return criticalDefense;
     }
@@ -108,6 +114,7 @@ function findBestMoveSmart(player, startTime, level) {
     console.log('Phase 2.3: Evaluating smart stacking...');
     const stackingMove = findOptimalStackingMove(player);
     if (stackingMove) {
+        showAIReason('Stacking musuh strategis!', 'STACK')
         console.log('✓ SMART STACKING EXECUTED!');
         return stackingMove;
     }
@@ -115,6 +122,7 @@ function findBestMoveSmart(player, startTime, level) {
     console.log('Phase 2.5: Aggressive blocking...');
     const aggressiveBlock = findAggressiveBlockingMove(player);
     if (aggressiveBlock) {
+        showAIReason('Blok agresif!', 'BLOCK')
         console.log('✓ AGGRESSIVE BLOCK EXECUTED!');
         return aggressiveBlock;
     }
@@ -126,14 +134,17 @@ function findBestMoveSmart(player, startTime, level) {
     // L2: Shallow minimax
     // L3: Existing iterative deepening
     if (level === 1) {
+        showAIReason('Greedy fallback', 'SEARCH')
         const fallback = generateAllPossibleMoves(player)
         return fallback[0] || null
     }
 
     if (level === 2) {
+        showAIReason('Shallow minimax', 'SEARCH')
         return minimaxDepthSearch(player, startTime, 2)
     }
 
+    showAIReason('Iterative deepening', 'SEARCH')
     return iterativeDeepeningSearch(player, startTime)
 }
 
