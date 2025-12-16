@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="top-bar-container">
+            <div class="header-info-group">
+                <h1><i class="fas fa-bullseye"></i> PUNTO</h1>
+                                <div id="gameInfo" class="game-info">
+                                        <div class="game-info-top">
+                                                <div class="info-box">
+                                                        Giliran: <span id="currentPlayer"></span>
+                                                </div>
+                                                <div class="info-box">
+                                                        Kartu: <span id="selectedCard">-</span>
+                                                </div>
+                                        </div>
+
+                                        <div class="game-info-bottom" style="display:flex; flex-direction:column; gap:6px">
+                                          <div style="display:flex; gap:10px; flex-wrap:wrap">
+                                            <div class="info-box">
+                                              Speed:
+                                              <select id="autoPlaySpeed">
+                                                <option value="200">0.2s</option>
+                                                <option value="500" selected>0.5s</option>
+                                                <option value="1000">1s</option>
+                                              </select>
+                                            </div>
+                                            <div class="info-box">
+                                              <button id="pauseBtn" onclick="togglePause()">⏸ Pause</button>
+                                              <button id="stepBtn" onclick="stepOnce()">▶ Step</button>
+                                            </div>
+                                          </div>
+                                          <div style="display:flex; gap:10px; flex-wrap:wrap">
+                                            <div class="info-box">
+                                              <button onclick="exportMatchJSON()">⬇ Export JSON</button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                </div>
+            </div>
+        </div>
+        
+        <div id="setupScreen" class="setup-screen">
+            <h2>Pilih Jumlah Pemain</h2>
+            <div class="player-count" style="flex-direction:column; gap:12px; width:min(520px, 92vw)">
+                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
+                    <label class="info-box" style="font-size:0.5em">Jumlah Pemain
+                        <select id="numPlayersSelect" style="margin-left:10px">
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4" selected>4</option>
+                        </select>
+                    </label>
+                    <label class="info-box" style="font-size:0.5em">Mode
+                        <select id="modeSelect" style="margin-left:10px">
+                            <option value="human" selected>1 Human + AI</option>
+                            <option value="aivai">AI vs AI</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div id="aiConfig" style="display:flex; flex-direction:column; gap:10px"></div>
+
+                <div class="info-box" style="font-size:0.45em">
+                  Tournament Mode
+                  <select id="tournamentModeSelect" style="margin-left:10px">
+                    <option value="off" selected>Off</option>
+                    <option value="on">On</option>
+                  </select>
+                </div>
+
+                <div class="info-box" style="font-size:0.45em">
+                  Total Games
+                  <input id="tournamentGames" type="number" value="50" min="1" max="500" style="width:80px; margin-left:10px">
+                </div>
+
+                <button id="startBtn" onclick="startConfiguredGame()" style="padding:15px 25px;font-size:0.7em;font-family:'Press Start 2P', cursive;background:#e74c3c;color:white;border:4px solid #c0392b;cursor:pointer;box-shadow:inset 0 -4px 0 #c0392b;transition:all 0.1s">Mulai Game</button>
+            </div>
+            <p style="margin-top:18px">
+                <i class="fas fa-info-circle"></i> Pilih AI per pemain (tipe + level).<br>
+                <i class="fas fa-robot"></i> Level 1=cepat, Level 3=kuat (lebih lama berpikir).<br>
+                <i class="fas fa-trophy"></i> Susun 4 kartu beruntun untuk menang!
+            </p>
+        </div>
+
+        <div id="gameScreen" style="display: none;">
+            <div id="aiThinking" class="ai-thinking" style="display: none;">
+                <i class="fas fa-robot"></i> AI sedang berpikir...
+            </div>
+
+            <div class="game-layout">
+                <div class="player-area player-p1" id="playerArea0"></div>
+                <div class="player-area player-p4" id="playerArea3"></div> 
+                
+                <div class="board-container">
+                    <div id="board" class="board"></div>
+                </div>
+                
+                <div class="player-area player-p2" id="playerArea1"></div>
+                <div class="player-area player-p3" id="playerArea2"></div>
+            </div>
+        </div>
+
+        <div id="winnerScreen" class="winner-screen" style="display: none;">
+            <h2><i class="fas fa-trophy"></i> SELAMAT! <i class="fas fa-trophy"></i></h2>
+            <div class="winner-info" id="winnerInfo"></div>
+            <div id="matchSummary" class="winner-info"></div>
+            <button class="restart-btn" onclick="location.reload()"><i class="fas fa-redo"></i> Main Lagi</button>
+        </div>
+        <div class="footer">© 2025 — Made by PHK (Paulus · Hari · Kevin)</div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="ai1.js"></script>
+</body>
+</html>
